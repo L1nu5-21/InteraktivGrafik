@@ -6,46 +6,48 @@ import java.awt.image.BufferStrategy;
 import java.util.ArrayList;
 
 public class Main extends Canvas implements Runnable{
-    private BufferStrategy bs;
 
     private boolean running = false;
     private Thread thread;
 
     // Bob
-    private int bobX = 200;
-    private int bobY = 200;
+    private final int bobX = 200;
+    private final int bobY = 200;
     private int bobVX = 0;
     private int bobVY = 0;
-    private int bobWidth = 30;
-    private int bobHeight = 30;
-    private int bobMaxMS = 10;
-    private Rectangle Bob = new Rectangle(bobX,bobY,bobWidth, bobHeight);
+    private final int bobWidth = 30;
+    private final int bobHeight = 30;
+    private final Rectangle Bob = new Rectangle(bobX,bobY,bobWidth, bobHeight);
 
     // Projectiles
-    private ArrayList<Integer> projectileX = new ArrayList<Integer>();
-    private ArrayList<Integer> projectileY = new ArrayList<Integer>();
-    private ArrayList<Integer> projectileVX = new ArrayList<Integer>();
-    private ArrayList<Integer> projectileVY = new ArrayList<Integer>();
+    private final ArrayList<Integer> projectileX = new ArrayList<>();
+    private final ArrayList<Integer> projectileY = new ArrayList<>();
+    private final ArrayList<Integer> projectileVX = new ArrayList<>();
+    private final ArrayList<Integer> projectileVY = new ArrayList<>();
 
     // Bullet
-    private int bulletWidth = 20;
-    private int bulletHeight = 20;
-    private int bulletMaxMS = 20;
+    private final Color bulletColor = Color.darkGray;
+    int bulletWidth = 20;
+    int bulletHeight = 20;
+    private final ArrayList<Rectangle> projectileHitbox = new ArrayList<>();
 
+    // Target
+    private final int targetX = (int) (Math.random()*560);
+    private final int targetY = (int) (Math.random()*360);
+    private final Rectangle target = new Rectangle(targetX, targetY, 40,40);
+    private final Color targetColor = Color.green;
 
-
-
-    private int x = 0;
-    private int y = 0;
-    private Rectangle hitbox = new Rectangle(x,y,30,30);
-
-    private int targetX = (int) (Math.random()*560);
-    private int targetY = (int) (Math.random()*360);
-    private Rectangle target = new Rectangle(targetX, targetY, 40,40);
-    private Color targetColor = Color.green;
+    // Steve
+    private final Color SteveColor = Color.blue;
+    private final int SteveWidth = 30;
+    private final int SteveHeight = 30;
+    private final int SteveX = 200;
+    private final int SteveY = 400;
+    private final Rectangle Steve = new Rectangle(SteveX, SteveY, SteveWidth, SteveHeight);
+    // private final ArrayList<Rectangle> Steve = new ArrayList<>();
 
     public Main() {
-        setSize(600,400);
+        setSize(1200,800);
         JFrame frame = new JFrame();
         frame.add(this);
         frame.addKeyListener(new MyKeyListener());
@@ -56,7 +58,7 @@ public class Main extends Canvas implements Runnable{
     }
 
     public void render() {
-        bs = getBufferStrategy();
+        BufferStrategy bs = getBufferStrategy();
         if (bs == null) {
             createBufferStrategy(3);
             return;
@@ -74,10 +76,13 @@ public class Main extends Canvas implements Runnable{
         g.clearRect(0,0,getWidth(),getHeight());
         g.setColor(targetColor);
         g.fillRect(target.x, target.y, target.width, target.height);
+        g.setColor(SteveColor);
+        g.fillRect(Steve.x, Steve.y, Steve.width, Steve.height);
         g.setColor(Color.pink);
         g.fillRect(Bob.x,Bob.y, Bob.width,Bob.height);
+        g.setColor(bulletColor);
         for (int i = 0 ; i < projectileX.size() ; i++) {
-            g.fillRect(projectileX.get(i), projectileY.get(i), bulletWidth, bulletHeight);
+            g.fillRect(projectileHitbox.get(i).x,projectileHitbox.get(i).y, projectileHitbox.get(i).width, projectileHitbox.get(i).height);
         }
     }
 
@@ -119,13 +124,60 @@ public class Main extends Canvas implements Runnable{
         stop();
     }
     private void update() {
-        for (int i = 0; i < projectileX.size(); i++) {
-            projectileX.set(i, projectileX.get(i) + projectileVX.get(i));
-            projectileY.set(i, projectileY.get(i) + projectileVY.get(i));
+        while (Steve.x < Bob.x || Steve.x > Bob.x) {
+
         }
-        if ()
+        for (int i = 0; i < projectileX.size(); i++) {
+            projectileHitbox.get(i).x = projectileHitbox.get(i).x + projectileVX.get(i);
+            projectileHitbox.get(i).y = projectileHitbox.get(i).y + projectileVY.get(i);
+            if (projectileHitbox.get(i).intersects(target)) {
+                projectileHitbox.remove(i);
+                projectileVX.remove(i);
+                projectileVY.remove(i);
+                projectileX.remove(i);
+                projectileY.remove(i);
+                break;
+            }
+            if (projectileHitbox.get(i).intersects(Steve)) {
+                projectileHitbox.remove(i);
+                projectileVX.remove(i);
+                projectileVY.remove(i);
+                projectileX.remove(i);
+                projectileY.remove(i);
+                Steve.x = 0;
+                Steve.y = 0;
+                Steve.width = 0;
+                Steve.height = 0;
+                break;
+            }
+        }
+        if (Bob.intersects(target)) {
+            switch (direction) {
+                case 'a':
+                    bobVX = 0;
+                    Bob.x +=1;
+                    break;
+                case 's':
+                    bobVY = 0;
+                    Bob.y -=1;
+                    break;
+                case 'w':
+                    bobVY = 0;
+                    Bob.y +=1;
+                    break;
+                case 'd':
+                    bobVX = 0;
+                    Bob.x -=1;
+                    break;
+                default:
+                    bobVX = 0;
+                    Bob.x +=0;
+            }
+        }
+
         Bob.x += bobVX;
         Bob.y += bobVY;
+
     }
     char direction = 'd';
     public class MyKeyListener implements KeyListener {
@@ -137,6 +189,7 @@ public class Main extends Canvas implements Runnable{
 
         @Override
         public void keyPressed(KeyEvent e) {
+            int bobMaxMS = 10;
             if (e.getKeyChar() == 'a') {
                 if (bobVX > -bobMaxMS) bobVX -= 5;
                 direction = 'a';
@@ -164,6 +217,8 @@ public class Main extends Canvas implements Runnable{
             if (e.getKeyChar() == KeyEvent.VK_SPACE) {
                 projectileX.add(Bob.x);
                 projectileY.add(Bob.y);
+                projectileHitbox.add(new Rectangle(Bob.x, Bob.y, bulletWidth, bulletHeight));
+                int bulletMaxMS = 20;
                 switch (direction){
                     case 'w':
                         projectileVX.add(0);
@@ -181,18 +236,6 @@ public class Main extends Canvas implements Runnable{
                         projectileVX.add(bulletMaxMS);
                         projectileVY.add(0);
                         break;
-                    /*case 'c':
-                        projectileVX.add(bulletMaxMS);
-                        projectileVY.add(bulletMaxMS);
-                    case 'v':
-                        projectileVX.add(-bulletMaxMS);
-                        projectileVY.add(bulletMaxMS);
-                    case 'b':
-                        projectileVX.add(bulletMaxMS);
-                        projectileVY.add(-bulletMaxMS);
-                    case 'n':
-                        projectileVX.add(-bulletMaxMS);
-                        projectileVY.add(-bulletMaxMS);*/
                     default:
                         projectileVX.add(bulletMaxMS);
                         projectileVY.add(bulletMaxMS);
